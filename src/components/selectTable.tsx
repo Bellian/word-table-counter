@@ -1,6 +1,6 @@
 import { useContext, useRef } from 'react'
 import { observer } from 'mobx-react-lite'
-import { FormControl, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material'
+import { FormControl, InputLabel, MenuItem, Paper, Select, Typography } from '@mui/material'
 import TableStoreContext from '../stores/table'
 
 const SelectTable = observer(function () {

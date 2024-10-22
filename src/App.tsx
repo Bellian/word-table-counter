@@ -1,8 +1,8 @@
-import { useContext, useRef, useState } from 'react'
+import { useContext } from 'react'
 import './App.scss'
 import { observer } from 'mobx-react-lite'
 import TableStoreContext from './stores/table'
-import { FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography } from '@mui/material'
+import { Paper, Stack, Typography } from '@mui/material'
 import SelectTable from './components/selectTable'
 import CreateTable from './components/createTable'
 import WordTable from './components/wordTable'
@@ -29,7 +29,7 @@ const App = observer(function () {
 
         <Stack direction={'row'} justifyContent={'space-between'}>
 
-          <button onClick={(event) => {
+          <button onClick={() => {
             context.loadTable(null);
           }}>Back</button>
 
@@ -43,18 +43,18 @@ const App = observer(function () {
 
           <button onClick={(event) => {
             if (context.recognizing) {
-              return context.stopListener(event.nativeEvent);
+              return context.stopListener();
             }
             context.startListener(event.nativeEvent);
           }}>{context.recognizing ? 'Stop' : 'Erkennung'}</button>
 
 
           <button onClick={(event) => {
-            if (context.recognizing) {
-              return context.stopListener(event.nativeEvent);
+            if (context.counting) {
+              return context.stopCounting();
             }
-            context.startListener(event.nativeEvent);
-          }}>{context.recognizing ? 'Stop' : 'Vorzählen'}</button>
+            context.count();
+          }}>{context.counting ? 'Stop' : 'Vorzählen'}</button>
         </Stack>
 
         <p>{context.interimTranscript[0]}</p>
@@ -62,6 +62,39 @@ const App = observer(function () {
         <p>{context.error}</p>
 
         <WordTable></WordTable>
+
+        {
+        context.counting && <div className="count-overlay">
+            <div className="count-overlay-content">
+              <Typography variant="h1" gutterBottom fontSize={'calc(min(30vw, 30vh))'}>
+                {context.current === 0 ? context.currentEntry : context.current}
+              </Typography>
+              <Typography variant="h1" gutterBottom fontSize={'calc(min(5vw, 5vh))'}>
+                {context.countingState.map(e => e+1).join(' - ')}&nbsp;
+              </Typography>
+              <Typography variant="h1" gutterBottom fontSize={'calc(min(5vw, 5vh))'}>
+                {context.finalTranscript}&nbsp;
+              </Typography>
+              <Stack direction={'row'} justifyContent={'center'} gap={1} sx={{ margin: '0.5rem 0' }}>
+                <button onClick={() => {
+                  context.stopCounting();
+                }}>Stop</button>
+                <button onClick={() => {
+                  context.resetCount();
+                }}>Reset</button>
+                <button onClick={() => {
+                  if(context.waitTimer.paused) {
+                    return context.continueCounting();
+                  }
+                  context.pauseCounting();
+                }}>{context.waitTimer.paused ? 'Weiter': 'Pause'} {context.waitTimer.paused}</button>
+                <button onClick={() => {
+                  context.addCountToState();
+                }}>Eintragen</button>
+              </Stack>
+            </div>
+          </div>
+        }
 
 
 

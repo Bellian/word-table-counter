@@ -9,12 +9,13 @@ const SpeechGrammarList =
     window.SpeechGrammarList || window.webkitSpeechGrammarList;
 
 
-const grammar = `#JSGF V1.0; grammar number; public <number> = ${Array.from({ length: 100 }, (v, k) => k + 1).join(' | ')};`;
+const grammar = `#JSGF V1.0; grammar number; public <number> = ${Array.from({ length: 100 }, (_, k) => k + 1).join(' | ')};`;
 const speechRecognitionList = new SpeechGrammarList();
 speechRecognitionList.addFromString(grammar, 1);
 
 
 class TableStore {
+    i = 1;
     loaded = false;
     table: Table | null = null;
     tables: Partial<Table>[] = [];
@@ -29,11 +30,14 @@ class TableStore {
     finalTranscript: string | undefined;
     interimTranscript: [string, string] = ['', ''];
 
+    countingState: number[] = [];
+
     interimCallback: ((result: string) => void) | undefined;
     resultCallback: ((result: string) => void) | undefined;
 
     voices: SpeechSynthesisVoice[] = [];
     error: string = '';
+    current: number = 1;
 
     constructor() {
         this.initListener();
@@ -60,6 +64,14 @@ class TableStore {
 
     get hasPrevPage() {
         return this.currentPage > 0;
+    }
+
+    get currentEntry(){
+        switch(this.countingState.length) {
+            case 0: return 'Seite';
+            case 1: return 'Zeile';
+            case 2: return 'Spalte';
+        }
     }
 
     setPage(page: number) {
@@ -166,7 +178,7 @@ class TableStore {
         this.resultCallback = resultCallback;
     }
 
-    stopListener(event: Event) {
+    stopListener() {
         this.recognition.stop();
     }
 
@@ -222,7 +234,7 @@ class TableStore {
             }
         };
 
-        this.recognition.onend = (ev) => {
+        this.recognition.onend = () => {
             this.speak('end');
             console.log('end');
             this.setRecognizing(false);
@@ -261,6 +273,12 @@ class TableStore {
     }
 
     speak(text: string, voice?: string) {
+        let oresolve: Function, oreject: Function;
+        const promise = new Promise((resolve, reject) => {
+            oresolve = resolve;
+            oreject = reject;
+        }).finally(() => {
+        })
         const utterThis = new SpeechSynthesisUtterance(text);
         const selectedOption = voice ?? this.table?.voice;
         for (let i = 0; i < this.voices.length; i++) {
@@ -268,15 +286,142 @@ class TableStore {
                 utterThis.voice = this.voices[i];
             }
         }
+        utterThis.onend = () => {
+            oresolve();
+        };
+        utterThis.onerror = (ev) => {
+            console.log(ev);
+            if(ev.error === 'interrupted') return oresolve();
+            oreject(ev.error);
+        };
         speechSynthesis.speak(utterThis);
+        return promise;
     }
 
     setError(error: string) {
         this.error = error;
     }
 
+    counting = false;
+    waitTimer = new WaitTimer();
+
+    async count() {
+        if (this.counting) {
+            return;
+        }
+        this.finalTranscript = '';
+        this.current = 0;
+        this.counting = true;
+        await this.waitTimer.wait();
+        while (this.counting) {
+            try {
+                this.setCurrent(this.current + 1);
+                await this.speak((this.current).toString());
+                await this.waitTimer.wait();
+            } catch (e) {
+                console.error('Error in counting');
+                if(e === undefined) continue;
+                console.error(e);
+                break;
+            }
+        }
+        this.speak('Ende');
+    }
+
+    setCurrent(current: number) {
+        this.current = current;
+    }
+
+    stopCounting() {
+        this.waitTimer.stop();
+        this.counting = false;
+        speechSynthesis.cancel();
+    }
+
+    async addCountToState() {
+        this.waitTimer.pause();
+        await this.addCountingState(this.current);
+        this.current = 0;
+        this.waitTimer.continue();
+        speechSynthesis.cancel();
+    }
+
+    async addCountingState(state: number) {
+        this.countingState.push(Math.max(state-1,0));
+        if (this.countingState.length >= 3) {
+            // we have a sequence
+            const [page, line, element] = this.countingState;
+            this.countingState.length = 0;
+            const word = this.table?.data[page][line][element] || 'Nicht Definiert';
+            const wordToAdd = this.table?.data[page][line][element] || '-';
+            this.finalTranscript += ' '+wordToAdd;
+            await this.speak(word);
+        }
+    }
+
+    resetCount(){
+        this.countingState = [];
+        this.current = 0;
+    }
+
+    pauseCounting(){
+        this.waitTimer.pause();
+        this.setCurrent(this.current);
+        const temp = this.waitTimer;
+        this.waitTimer = undefined as any;
+        this.waitTimer = temp;
+    };
+
+    continueCounting(){
+        this.waitTimer.continue();
+        this.setCurrent(this.current);
+        const temp = this.waitTimer;
+        this.waitTimer = undefined as any;
+        this.waitTimer = temp;
+    };
+
 }
 
+
+class WaitTimer {
+    duration = 1000;
+    resolve: Function | undefined;
+    timeout: number | undefined;
+    promise: Promise<unknown> | undefined;
+    paused = false;
+
+    wait(){
+        if(this.promise) return this.promise;
+        this.promise = new Promise((resolve) => {
+            this.resolve = resolve;
+            if(!this.paused) {
+                this.continue();
+            }
+        }).finally(() => {
+            this.timeout = undefined;
+            this.resolve = undefined;
+            this.promise = undefined;
+        });
+        return this.promise;
+    }
+    pause(){
+        this.paused = true;
+        if(!this.timeout) return;
+        clearTimeout(this.timeout);
+        this.timeout = undefined;
+    }
+    stop(){
+        this.pause();
+        this.resolve = undefined;
+        this.promise = undefined;
+        this.paused = false;
+    }
+    continue(){
+        this.paused = false;
+        if(this.timeout || !this.resolve) return;
+        this.timeout = setTimeout(this.resolve, this.duration);
+    }
+}
 
 export const TableStoreInstance = new TableStore();
 export const TableStoreContext = createContext(

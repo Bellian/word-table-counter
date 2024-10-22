@@ -1,6 +1,6 @@
 import { useContext, useRef, useState } from 'react'
 import { observer } from 'mobx-react-lite'
-import { FormControl, Input, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material'
+import { Input, Typography } from '@mui/material'
 import TableStoreContext from '../stores/table'
 import { Stack } from '@mui/system'
 
