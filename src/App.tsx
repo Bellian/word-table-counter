@@ -61,13 +61,13 @@ const App = observer(function () {
         <WordTable></WordTable>
 
         {
-        context.counting && <div className="count-overlay">
+          context.counting && <div className="count-overlay">
             <div className="count-overlay-content">
               <Typography variant="h1" gutterBottom fontSize={'calc(min(30vw, 30vh))'}>
                 {context.current === 0 ? context.currentEntry : context.current}
               </Typography>
               <Typography variant="h1" gutterBottom fontSize={'calc(min(5vw, 5vh))'}>
-                {context.countingState.map(e => e+1).join(' - ')}&nbsp;
+                {context.countingState.map(e => e + 1).join(' - ')}&nbsp;
               </Typography>
               <Typography variant="h1" gutterBottom fontSize={'calc(min(5vw, 5vh))'}>
                 {context.finalTranscript}&nbsp;
@@ -80,11 +80,11 @@ const App = observer(function () {
                   context.resetCount();
                 }}>Reset</button>
                 <button onClick={() => {
-                  if(context.waitTimer.paused) {
+                  if (context.waitTimer.paused) {
                     return context.continueCounting();
                   }
                   context.pauseCounting();
-                }}>{context.waitTimer.paused ? 'Weiter': 'Pause'} {context.waitTimer.paused}</button>
+                }}>{context.waitTimer.paused ? 'Weiter' : 'Pause'} {context.waitTimer.paused}</button>
                 <button onClick={() => {
                   context.addCountToState();
                 }}>Eintragen</button>

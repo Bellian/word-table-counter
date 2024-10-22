@@ -66,8 +66,8 @@ class TableStore {
         return this.currentPage > 0;
     }
 
-    get currentEntry(){
-        switch(this.countingState.length) {
+    get currentEntry() {
+        switch (this.countingState.length) {
             case 0: return 'Seite';
             case 1: return 'Zeile';
             case 2: return 'Spalte';
@@ -291,7 +291,7 @@ class TableStore {
         };
         utterThis.onerror = (ev) => {
             console.log(ev);
-            if(ev.error === 'interrupted') return oresolve();
+            if (ev.error === 'interrupted') return oresolve();
             oreject(ev.error);
         };
         speechSynthesis.speak(utterThis);
@@ -320,7 +320,7 @@ class TableStore {
                 await this.waitTimer.wait();
             } catch (e) {
                 console.error('Error in counting');
-                if(e === undefined) continue;
+                if (e === undefined) continue;
                 console.error(e);
                 break;
             }
@@ -347,24 +347,24 @@ class TableStore {
     }
 
     async addCountingState(state: number) {
-        this.countingState.push(Math.max(state-1,0));
+        this.countingState.push(Math.max(state - 1, 0));
         if (this.countingState.length >= 3) {
             // we have a sequence
             const [page, line, element] = this.countingState;
             this.countingState.length = 0;
             const word = this.table?.data[page][line][element] || 'Nicht Definiert';
             const wordToAdd = this.table?.data[page][line][element] || '-';
-            this.finalTranscript += ' '+wordToAdd;
+            this.finalTranscript += ' ' + wordToAdd;
             await this.speak(word);
         }
     }
 
-    resetCount(){
+    resetCount() {
         this.countingState = [];
         this.current = 0;
     }
 
-    pauseCounting(){
+    pauseCounting() {
         this.waitTimer.pause();
         this.setCurrent(this.current);
         const temp = this.waitTimer;
@@ -372,13 +372,34 @@ class TableStore {
         this.waitTimer = temp;
     };
 
-    continueCounting(){
+    continueCounting() {
         this.waitTimer.continue();
         this.setCurrent(this.current);
         const temp = this.waitTimer;
         this.waitTimer = undefined as any;
         this.waitTimer = temp;
     };
+
+
+    compress(string: string, encoding: CompressionFormat) {
+        const byteArray = new TextEncoder().encode(string);
+        const cs = new CompressionStream(encoding);
+        const writer = cs.writable.getWriter();
+        writer.write(byteArray);
+        writer.close();
+        return new Response(cs.readable).arrayBuffer();
+    }
+
+    decompress(byteArray: ArrayBuffer, encoding: CompressionFormat) {
+        const cs = new DecompressionStream(encoding);
+        const writer = cs.writable.getWriter();
+        writer.write(byteArray);
+        writer.close();
+        return new Response(cs.readable).arrayBuffer().then(function (arrayBuffer) {
+            return new TextDecoder().decode(arrayBuffer);
+        });
+    }
+
 
 }
 
@@ -390,11 +411,11 @@ class WaitTimer {
     promise: Promise<unknown> | undefined;
     paused = false;
 
-    wait(){
-        if(this.promise) return this.promise;
+    wait() {
+        if (this.promise) return this.promise;
         this.promise = new Promise((resolve) => {
             this.resolve = resolve;
-            if(!this.paused) {
+            if (!this.paused) {
                 this.continue();
             }
         }).finally(() => {
@@ -404,21 +425,21 @@ class WaitTimer {
         });
         return this.promise;
     }
-    pause(){
+    pause() {
         this.paused = true;
-        if(!this.timeout) return;
+        if (!this.timeout) return;
         clearTimeout(this.timeout);
         this.timeout = undefined;
     }
-    stop(){
+    stop() {
         this.pause();
         this.resolve = undefined;
         this.promise = undefined;
         this.paused = false;
     }
-    continue(){
+    continue() {
         this.paused = false;
-        if(this.timeout || !this.resolve) return;
+        if (this.timeout || !this.resolve) return;
         this.timeout = setTimeout(this.resolve, this.duration);
     }
 }
