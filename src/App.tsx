@@ -2,7 +2,7 @@ import { useContext, useRef } from 'react'
 import './App.scss'
 import { observer } from 'mobx-react-lite'
 import TableStoreContext from './stores/table'
-import { Paper, Stack, Typography } from '@mui/material'
+import { Paper, Snackbar, Stack, Typography } from '@mui/material'
 import SelectTable from './components/selectTable'
 import CreateTable from './components/createTable'
 import WordTable from './components/wordTable'
@@ -39,6 +39,7 @@ const App = observer(function () {
           </div>
         </div>
       }
+      {context.error && <p className='errorArea'>{context.error}</p>}
     </>
   }
 
@@ -137,6 +138,7 @@ const App = observer(function () {
         }
       </Paper>
 
+      {context.error && <p className='errorArea'>{context.error}</p>}
     </>
   )
 })

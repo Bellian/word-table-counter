@@ -302,6 +302,11 @@ class TableStore {
 
     setError(error: string) {
         this.error = error;
+        if (this.error) {
+            setTimeout(() => {
+                this.setError('');
+            }, 10000);
+        }
     }
 
     counting = false;
