@@ -1,6 +1,6 @@
 import { useContext, useRef } from 'react'
 import { observer } from 'mobx-react-lite'
-import { FormControl, InputLabel, MenuItem, Paper, Select, Typography } from '@mui/material'
+import { FormControl, InputLabel, MenuItem, Paper, Select, Stack, Typography } from '@mui/material'
 import TableStoreContext from '../stores/table'
 
 const SelectTable = observer(function () {
@@ -36,7 +36,12 @@ const SelectTable = observer(function () {
               </Select>
             </FormControl>
 
-            <button type='submit'>laden</button>
+            <Stack direction={'row'} justifyContent={'center'} gap={1} sx={{ margin: '0.5rem 0' }}>
+              <button type='submit'>Laden</button>
+              <button type='button' onClick={() => {
+                context.setImporting(true);
+              }}>Import</button>
+            </Stack>
           </form>
         </Paper>
       }

@@ -38,6 +38,8 @@ class TableStore {
     voices: SpeechSynthesisVoice[] = [];
     error: string = '';
     current: number = 1;
+    export: string = '';
+    importing = false;
 
     constructor() {
         this.initListener();
@@ -398,6 +400,69 @@ class TableStore {
         return new Response(cs.readable).arrayBuffer().then(function (arrayBuffer) {
             return new TextDecoder().decode(arrayBuffer);
         });
+    }
+
+    async exportTable() {
+        if (!this.table) return;
+        const uint8Array = new Uint8Array(await this.compress(JSON.stringify(this.table), 'gzip'));
+        this.export = btoa(String.fromCharCode(...uint8Array));
+    }
+
+    setImporting(val: boolean) {
+        this.importing = val;
+    }
+
+    async importTable(data: string) {
+        console.log('importing', data);
+        let table: Table;
+        try {
+            const byteArray = new Uint8Array(atob(data).split('').map(c => c.charCodeAt(0)));
+            table = JSON.parse(await this.decompress(byteArray.buffer, 'gzip')) as Table;
+        } catch (e) {
+            console.error(e);
+            this.error = 'Error parsing Table';
+            return
+        }
+        // verify table
+        if (!table.id || !table.name || !table.data || !table.pages || !table.lines || !table.length) {
+            console.error('Invalid Table');
+            this.error = 'Invalid imported table';
+            return;
+        }
+        // verify table data dimensions
+        if (table.data.length !== table.pages || table.data[0].length !== table.lines || table.data[0][0].length !== table.length) {
+            console.error('Invalid Pages');
+            this.error = 'Invalid dimensions of imported table';
+            return;
+        }
+        // verify table data
+        const invalid = table.data.find((page, i) => {
+            return page.find((line, j) => {
+                return line.find((element, k) => {
+                    return typeof element !== 'string';
+                });
+            });
+        });
+        if (invalid) {
+            console.error('Invalid Data');
+            this.error = 'Invalid data in imported table';
+            return;
+        }
+
+        this.table = table;
+
+        if (!this.tables.find(e => e.id === table.id)) {
+            this.tables.push({
+                id: this.table!.id,
+                name: this.table!.name,
+            });
+        }
+
+        this.currentPage = 0;
+        this.setLastTable(this.table!.id);
+        this.saveTable();
+        this.saveTableList();
+        this.setImporting(false);
     }
 
 

@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useContext, useRef } from 'react'
 import './App.scss'
 import { observer } from 'mobx-react-lite'
 import TableStoreContext from './stores/table'
@@ -9,6 +9,7 @@ import WordTable from './components/wordTable'
 
 const App = observer(function () {
   const context = useContext(TableStoreContext);
+  const importRef = useRef<HTMLTextAreaElement>();
 
   if (!context.loaded) {
     return <></>
@@ -19,6 +20,25 @@ const App = observer(function () {
     return <>
       <SelectTable></SelectTable>
       <CreateTable></CreateTable>
+
+      {
+        context.importing && <div className="export-overlay">
+          <div className="export-overlay-content">
+            <Typography variant="h1" gutterBottom>
+              Import
+            </Typography>
+            <textarea ref={importRef as any}></textarea>
+            <Stack direction={'row'} justifyContent={'center'} gap={1} sx={{ margin: '0.5rem 0' }}>
+              <button onClick={() => {
+                context.setImporting(false);
+              }}>Schließen</button>
+              <button onClick={() => {
+                context.importTable(importRef.current?.value || '');
+              }}>Importieren</button>
+            </Stack>
+          </div>
+        </div>
+      }
     </>
   }
 
@@ -36,6 +56,10 @@ const App = observer(function () {
           <Typography variant="h4" gutterBottom>
             {context.table.name}
           </Typography>
+
+          <button onClick={() => {
+            context.exportTable();
+          }}>Export</button>
         </Stack>
 
 
@@ -93,8 +117,24 @@ const App = observer(function () {
           </div>
         }
 
-
-
+        {
+          context.export && <div className="export-overlay">
+            <div className="export-overlay-content">
+              <Typography variant="h1" gutterBottom>
+                Export
+              </Typography>
+              <textarea value={context.export} readOnly onFocus={() => {
+                // copy to clickboard
+                navigator.clipboard.writeText(context.export);
+              }}></textarea>
+              <Stack direction={'row'} justifyContent={'center'} gap={1} sx={{ margin: '0.5rem 0' }}>
+                <button onClick={() => {
+                  context.export = '';
+                }}>Schließen</button>
+              </Stack>
+            </div>
+          </div>
+        }
       </Paper>
 
     </>

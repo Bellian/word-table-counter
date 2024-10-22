@@ -84,7 +84,8 @@
 }
 
 
-.count-overlay {
+.count-overlay,
+.export-overlay {
   position: fixed;
   inset: 0;
   background: rgba(255, 255, 255, 0.5);
@@ -94,4 +95,9 @@
   z-index: 1000;
   // blur background
   backdrop-filter: blur(5px);
+
+  textarea {
+    width: 50vw;
+    height: 50vh;
+  }
 }
