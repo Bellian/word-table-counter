@@ -49,12 +49,9 @@ const App = observer(function () {
           }}>{context.recognizing ? 'Stop' : 'Erkennung'}</button>
 
 
-          <button onClick={(event) => {
-            if (context.counting) {
-              return context.stopCounting();
-            }
+          <button onClick={() => {
             context.count();
-          }}>{context.counting ? 'Stop' : 'Vorzählen'}</button>
+          }}>Vorzählen</button>
         </Stack>
 
         <p>{context.interimTranscript[0]}</p>
