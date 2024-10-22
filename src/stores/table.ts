@@ -413,26 +413,25 @@ class TableStore {
     }
 
     async importTable(data: string) {
-        console.log('importing', data);
         let table: Table;
         try {
             const byteArray = new Uint8Array(atob(data).split('').map(c => c.charCodeAt(0)));
             table = JSON.parse(await this.decompress(byteArray.buffer, 'gzip')) as Table;
         } catch (e) {
             console.error(e);
-            this.error = 'Error parsing Table';
+            this.setError('Error parsing Table');
             return
         }
         // verify table
         if (!table.id || !table.name || !table.data || !table.pages || !table.lines || !table.length) {
             console.error('Invalid Table');
-            this.error = 'Invalid imported table';
+            this.setError('Invalid imported table');
             return;
         }
         // verify table data dimensions
         if (table.data.length !== table.pages || table.data[0].length !== table.lines || table.data[0][0].length !== table.length) {
             console.error('Invalid Pages');
-            this.error = 'Invalid dimensions of imported table';
+            this.setError('Invalid dimensions of imported table');
             return;
         }
         // verify table data
@@ -445,7 +444,7 @@ class TableStore {
         });
         if (invalid) {
             console.error('Invalid Data');
-            this.error = 'Invalid data in imported table';
+            this.setError('Invalid data in imported table');
             return;
         }
 
